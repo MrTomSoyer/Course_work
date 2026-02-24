@@ -30,7 +30,6 @@ class YandexDisc:
             async_done = requests.get(op_item, headers=self.headers)
             if async_done.status_code == 200:
                 break
-        self.get_all_files()
 
 
     def delete_folder(self):
@@ -56,15 +55,28 @@ class YandexDisc:
         if response_name.status_code == 200:
             copy_name = response_name.json()['name'][:-4]
             if copy_name == self.name_file:
-                self.get_all_files()
+                self.info(params['path'])
                 print("Фото с такой подписью уже есть на Яндекс.Диске")
         elif response_name.status_code == 404:
             response_async = requests.post(self.url + "/upload", params=params, headers=self.headers)
             if response_async.status_code == 202:
                 self.async_done(response_async)
+                self.info(params['path'])
                 print("Копия создана и загружена на Яндекс.Диск")
         else:
             print("Ошибка резервного копирования файла")
+
+    def info(self, file):
+        response = requests.get(self.url,params={'path': file}, headers=self.headers)
+        if response.status_code == 200:
+            file_info = {'Размер загруженного файла': f'{response.json()["size"]}'}
+            with open("Размер загруженного файла.json", "w", encoding='utf-8') as f:
+                json.dump(file_info, f, ensure_ascii=False, indent=4)
+            return 'Файл создан'
+        elif response.status_code == 401:
+            return 'Неверно ввели токен. Авторизация не прошла'
+        else:
+            return "Ошибка"
 
 
     def get_all_files(self):
